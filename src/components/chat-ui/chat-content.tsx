@@ -1,4 +1,4 @@
-"use client";
+
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useChat } from "@ai-sdk/react";

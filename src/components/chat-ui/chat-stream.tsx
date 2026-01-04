@@ -21,8 +21,38 @@ import {
 } from "lucide-react";
 import { UIMessage } from "ai";
 
+import { useState } from "react";
+import { Check } from "lucide-react";
+
 interface ChatStreamProps {
     messages: UIMessage[];
+}
+
+function CopyAction({ content, className }: { content: string; className?: string }) {
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(content);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy text: ", err);
+        }
+    };
+
+    return (
+        <MessageAction tooltip={isCopied ? "Copied" : "Copy"} delayDuration={100}>
+            <Button
+                variant="ghost"
+                size="icon"
+                className={cn("rounded-full", className)}
+                onClick={handleCopy}
+            >
+                {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+        </MessageAction>
+    );
 }
 
 export function ChatStream({ messages }: ChatStreamProps) {
@@ -32,6 +62,11 @@ export function ChatStream({ messages }: ChatStreamProps) {
                 {messages.map((message, index) => {
                     const isAssistant = message.role === "assistant"
                     const isLastMessage = index === messages.length - 1
+                    
+                    const messageContent = message.parts
+                        .filter((part) => part.type === "text")
+                        .map((part) => part.text)
+                        .join("");
 
                     return (
                         <Message
@@ -47,10 +82,7 @@ export function ChatStream({ messages }: ChatStreamProps) {
                                         className="text-foreground prose flex-1 rounded-lg bg-transparent p-0"
                                         markdown
                                     >
-                                        {message.parts
-                                            .filter((part) => part.type === "text")
-                                            .map((part) => part.text)
-                                            .join("")}
+                                        {messageContent}
                                     </MessageContent>
                                     <MessageActions
                                         className={cn(
@@ -58,15 +90,7 @@ export function ChatStream({ messages }: ChatStreamProps) {
                                             isLastMessage && "opacity-100"
                                         )}
                                     >
-                                        <MessageAction tooltip="Copy" delayDuration={100}>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-full"
-                                            >
-                                                <Copy />
-                                            </Button>
-                                        </MessageAction>
+                                        <CopyAction content={messageContent} />
                                         <MessageAction tooltip="Upvote" delayDuration={100}>
                                             <Button
                                                 variant="ghost"
@@ -90,10 +114,7 @@ export function ChatStream({ messages }: ChatStreamProps) {
                             ) : (
                                 <div className="group flex flex-col items-end gap-1">
                                     <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
-                                        {message.parts
-                                            .filter((part) => part.type === "text")
-                                            .map((part) => part.text)
-                                            .join("")}
+                                        {messageContent}
                                     </MessageContent>
                                     <MessageActions
                                         className={cn(
@@ -118,15 +139,7 @@ export function ChatStream({ messages }: ChatStreamProps) {
                                                 <Trash />
                                             </Button>
                                         </MessageAction>
-                                        <MessageAction tooltip="Copy" delayDuration={100}>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-full"
-                                            >
-                                                <Copy />
-                                            </Button>
-                                        </MessageAction>
+                                        <CopyAction content={messageContent} />
                                     </MessageActions>
                                 </div>
                             )}
