@@ -1,5 +1,5 @@
 import { generateId, type UIMessage } from "ai";
-import { existsSync, mkdirSync, renameSync } from "fs";
+import { existsSync, mkdirSync, readdirSync, renameSync, statSync } from "fs";
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
@@ -124,4 +124,147 @@ function getChatFile(id: string): string {
     // Path.join automatically handles path separators and prevents traversal
     // But we've already validated the ID above, so this is safe
     return path.join(chatDir, `${id}.json`);
+}
+
+function getChatDir(): string {
+    const chatDir = path.join(process.cwd(), ".chats");
+    if (!existsSync(chatDir)) {
+        mkdirSync(chatDir, { recursive: true });
+    }
+    return chatDir;
+}
+
+// Extract text from message parts for title/preview
+function extractTextFromMessage(message: UIMessage): string {
+    if (!message.parts || message.parts.length === 0) {
+        return "";
+    }
+    
+    return message.parts
+        .filter((part) => part.type === "text")
+        .map((part) => (part as { text: string }).text)
+        .join(" ")
+        .trim();
+}
+
+// Generate a title from messages (use first user message or first message)
+function generateChatTitle(messages: UIMessage[]): string {
+    if (messages.length === 0) {
+        return "New Chat";
+    }
+    
+    // Try to find first user message
+    const firstUserMessage = messages.find((msg) => msg.role === "user");
+    if (firstUserMessage) {
+        const text = extractTextFromMessage(firstUserMessage);
+        if (text) {
+            // Use first 50 characters as title
+            return text.length > 50 ? text.substring(0, 50) + "..." : text;
+        }
+    }
+    
+    // Fallback to first message
+    const firstMessage = messages[0];
+    const text = extractTextFromMessage(firstMessage);
+    if (text) {
+        return text.length > 50 ? text.substring(0, 50) + "..." : text;
+    }
+    
+    return "New Chat";
+}
+
+// Get last message preview
+function getLastMessagePreview(messages: UIMessage[]): string {
+    if (messages.length === 0) {
+        return "No messages yet";
+    }
+    
+    // Get last message
+    const lastMessage = messages[messages.length - 1];
+    const text = extractTextFromMessage(lastMessage);
+    
+    if (text) {
+        return text.length > 60 ? text.substring(0, 60) + "..." : text;
+    }
+    
+    return "No text content";
+}
+
+export interface ChatMetadata {
+    id: string;
+    title: string;
+    lastMessage: string;
+    timestamp: number;
+    messageCount: number;
+}
+
+export async function listChats(): Promise<ChatMetadata[]> {
+    const chatDir = getChatDir();
+    
+    try {
+        const files = readdirSync(chatDir);
+        const chats: ChatMetadata[] = [];
+        
+        for (const file of files) {
+            // Only process .json files, skip .tmp files
+            if (!file.endsWith(".json")) {
+                continue;
+            }
+            
+            const chatId = file.replace(".json", "");
+            
+            // Validate chat ID from filename
+            if (!validateChatId(chatId)) {
+                continue;
+            }
+            
+            try {
+                const messages = await loadChat(chatId);
+                
+                // Skip empty chats
+                if (messages.length === 0) {
+                    continue;
+                }
+                
+                // Get file stats for timestamp
+                const filePath = path.join(chatDir, file);
+                const stats = statSync(filePath);
+                
+                // Get last message timestamp from messages if available
+                const lastMessage = messages[messages.length - 1];
+                // UIMessage may have createdAt field, but use file mtime as fallback
+                const messageTimestamp = (lastMessage as any).createdAt 
+                    ? new Date((lastMessage as any).createdAt).getTime()
+                    : stats.mtimeMs;
+                
+                chats.push({
+                    id: chatId,
+                    title: generateChatTitle(messages),
+                    lastMessage: getLastMessagePreview(messages),
+                    timestamp: messageTimestamp,
+                    messageCount: messages.length,
+                });
+            } catch (error) {
+                // Skip corrupted files
+                console.error(`Failed to load chat ${chatId}:`, error);
+                continue;
+            }
+        }
+        
+        // Sort by timestamp (newest first)
+        return chats.sort((a, b) => b.timestamp - a.timestamp);
+    } catch (error) {
+        console.error("Failed to list chats:", error);
+        return [];
+    }
+}
+
+export async function getChatTitle(id: string): Promise<string> {
+    try {
+        const messages = await loadChat(id);
+        return generateChatTitle(messages);
+    } catch (error) {
+        console.error(`Failed to get chat title for ${id}:`, error);
+        return "Chat";
+    }
 }

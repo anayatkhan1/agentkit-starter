@@ -11,7 +11,7 @@ export function FullChatApp({
 }: { id?: string; initialMessages?: UIMessage[] }) {
   return (
     <SidebarProvider>
-      <ChatSidebar />
+      <ChatSidebar currentChatId={id} />
       <SidebarInset>
         <ChatContent id={id} initialMessages={initialMessages} />
       </SidebarInset>
