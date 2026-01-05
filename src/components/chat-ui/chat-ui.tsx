@@ -1,15 +1,19 @@
 "use client"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { type UIMessage } from "ai";
 import { ChatContent } from "./chat-content"
 import { ChatSidebar } from "./chat-sidebar"
 
-export function FullChatApp() {
+export function FullChatApp({
+	id,
+	initialMessages,
+}: { id?: string; initialMessages?: UIMessage[] }) {
   return (
     <SidebarProvider>
       <ChatSidebar />
       <SidebarInset>
-        <ChatContent />
+        <ChatContent id={id} initialMessages={initialMessages} />
       </SidebarInset>
     </SidebarProvider>
   )

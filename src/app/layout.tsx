@@ -1,5 +1,3 @@
-import { ConditionalNavbar } from "@/components/conditional-navbar";
-import { ConditionalLayoutWrapper } from "@/components/conditional-layout-wrapper";
 import { ThemeProvider } from "@/components/theme-provider";
 import { siteConfig } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
@@ -51,10 +49,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ConditionalLayoutWrapper>
-            <ConditionalNavbar />
-            {children}
-          </ConditionalLayoutWrapper>
+          {children}
         </ThemeProvider>
       </body>
     </html>

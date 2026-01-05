@@ -1,14 +1,20 @@
 
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useChat } from "@ai-sdk/react";
+import { type UIMessage, useChat } from "@ai-sdk/react";
 import { ChatInput } from "./chat-input";
 import { ChatStream } from "./chat-stream";
 
-export function ChatContent() {
+export function ChatContent({
+	id,
+	initialMessages,
+}: { id?: string; initialMessages?: UIMessage[] }) {
 
     // useChat provides streaming state and messages
-    const { messages, sendMessage, status, stop } = useChat({});
+    const { messages, sendMessage, status, stop } = useChat({
+        id,
+        messages: initialMessages,
+    });
 
     // Derive loading state from SDK status
     const isLoading = status === "submitted" || status === "streaming";

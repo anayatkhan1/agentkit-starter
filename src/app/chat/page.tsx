@@ -1,7 +1,7 @@
-import { FullChatApp } from "@/components/chat-ui/chat-ui"
+import { createChat } from "@/lib/chat-store";
+import { redirect } from "next/navigation";
 
-export default function ChatPage() {
-  return <FullChatApp />
+export default async function ChatPage() {
+	const id = await createChat();
+	redirect(`/chat/${id}`);
 }
-
-
