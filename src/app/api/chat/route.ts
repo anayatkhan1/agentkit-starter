@@ -9,8 +9,16 @@ import {
 	streamText,
 } from "ai";
 import { type NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(request: NextRequest) {
+	// Get authenticated user ID
+	const { userId } = await auth();
+
+	if (!userId) {
+		return new Response("Unauthorized", { status: 401 });
+	}
+
 	const body = await request.json();
 	const id = body.id;
 
@@ -24,14 +32,14 @@ export async function POST(request: NextRequest) {
 	let messages: UIMessage[];
 	if (body.message) {
 		// Load previous messages from storage and append the new message
-		const previousMessages = await loadChat(id);
+		const previousMessages = await loadChat(id, userId);
 		messages = [...previousMessages, body.message];
 	} else if (body.messages) {
 		// Backward compatibility: use all messages if provided
 		messages = body.messages;
 	} else {
 		// Load existing messages or start fresh
-		messages = await loadChat(id);
+		messages = await loadChat(id, userId);
 	}
 
 	// Convert to model messages for the AI SDK
@@ -56,7 +64,7 @@ export async function POST(request: NextRequest) {
 		}),
 		onFinish: async ({ messages }) => {
 			try {
-				await saveChat({ chatId: id, messages });
+				await saveChat({ chatId: id, messages, userId });
 			} catch (error) {
 				// Log error but don't fail the request
 				// The response has already been sent, so we can't return an error

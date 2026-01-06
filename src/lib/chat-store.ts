@@ -1,22 +1,5 @@
-import { generateId, type UIMessage } from "ai";
-import { existsSync, mkdirSync, readdirSync, renameSync, statSync } from "fs";
-import { readFile, writeFile } from "fs/promises";
-import path from "path";
-
-// Validate chat ID to prevent path traversal attacks
-function validateChatId(id: string): boolean {
-    // Only allow alphanumeric characters, hyphens, and underscores
-    // This matches the format from generateId() which uses base64url encoding
-    return /^[a-zA-Z0-9_-]+$/.test(id) && id.length > 0 && id.length < 256;
-}
-
-// Sanitize and validate chat ID, throw if invalid
-function sanitizeChatId(id: string): string {
-    if (!validateChatId(id)) {
-        throw new Error(`Invalid chat ID format: ${id}`);
-    }
-    return id;
-}
+import { type UIMessage } from "ai";
+import prisma from "./prisma";
 
 // Validate messages array structure
 function validateMessages(messages: UIMessage[]): void {
@@ -31,107 +14,205 @@ function validateMessages(messages: UIMessage[]): void {
     }
 }
 
-export async function createChat(): Promise<string> {
-    const id = generateId();
-    const file = getChatFile(id);
-    
+// Helper function to convert UIMessage to Prisma-compatible JSON
+// This ensures the message structure matches what was stored in the filesystem
+function messageToPrismaJson(msg: UIMessage): unknown {
+    // Serialize and parse to ensure we have a plain object
+    // This matches the structure from the original JSON files
+    return JSON.parse(JSON.stringify(msg));
+}
+
+/**
+ * Create a new chat for a user
+ * @param userId - Clerk user ID
+ * @returns Chat ID
+ */
+export async function createChat(userId: string): Promise<string> {
+    if (!userId) {
+        throw new Error("User ID is required to create a chat");
+    }
+
     try {
-        // Atomic write: write to temp file first, then rename
-        const tempFile = `${file}.tmp`;
-        await writeFile(tempFile, "[]", "utf8");
-        renameSync(tempFile, file);
-        return id;
+        const chat = await prisma.chat.create({
+            data: {
+                userId,
+                title: null, // Will be set when first message is added
+            },
+        });
+        return chat.id;
     } catch (error) {
-        console.error(`Failed to create chat ${id}:`, error);
+        console.error(`Failed to create chat for user ${userId}:`, error);
         throw new Error(`Failed to create chat: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 }
 
-export async function loadChat(id: string): Promise<UIMessage[]> {
-    const sanitizedId = sanitizeChatId(id);
-    const file = getChatFile(sanitizedId);
-    
-    if (!existsSync(file)) {
-        return [];
-    }
-    
+
+export async function loadChat(id: string, userId?: string): Promise<UIMessage[]> {
     try {
-        const content = await readFile(file, "utf8");
-        
-        // Handle empty files
-        if (!content.trim()) {
+        // First, verify the chat exists and belongs to the user (if userId provided)
+        const chat = await prisma.chat.findUnique({
+            where: { id },
+            select: { userId: true },
+        });
+
+        if (!chat) {
             return [];
         }
-        
-        const messages = JSON.parse(content);
-        
-        // Validate parsed data
-        if (!Array.isArray(messages)) {
-            console.warn(`Chat ${sanitizedId} contains invalid data, returning empty array`);
-            return [];
+
+        // If userId is provided, verify ownership
+        if (userId && chat.userId !== userId) {
+            throw new Error("Unauthorized: Chat does not belong to user");
         }
-        
-        return messages;
+
+        // Load all messages for this chat, ordered by creation time
+        const messages = await prisma.message.findMany({
+            where: { chatId: id },
+            orderBy: { createdAt: "asc" },
+        });
+
+        // Convert database messages back to UIMessage format
+        return messages.map((msg) => {
+            // Prisma returns JsonValue, we need to cast it properly
+            const content = msg.content as unknown;
+            return content as UIMessage;
+        });
     } catch (error) {
-        // Log error but don't throw - return empty array for corrupted files
-        console.error(`Failed to load chat ${sanitizedId}:`, error);
+        // Log error but don't throw - return empty array for non-existent chats
+        if (error instanceof Error && error.message.includes("Unauthorized")) {
+            throw error; // Re-throw authorization errors
+        }
+        console.error(`Failed to load chat ${id}:`, error);
         return [];
     }
 }
+
 
 export async function saveChat({
     chatId,
     messages,
+    userId,
 }: {
     chatId: string;
     messages: UIMessage[];
+    userId?: string;
 }): Promise<void> {
     // Validate inputs
-    const sanitizedId = sanitizeChatId(chatId);
     validateMessages(messages);
-    
-    const file = getChatFile(sanitizedId);
-    
+
     try {
-        // Atomic write: write to temp file first, then rename
-        // This prevents corruption if the process crashes mid-write
-        const tempFile = `${file}.tmp`;
-        const content = JSON.stringify(messages, null, 2);
-        
-        await writeFile(tempFile, content, "utf8");
-        
-        // Atomic rename - this is the critical operation
-        // On most filesystems, rename is atomic
-        renameSync(tempFile, file);
-        
-        // Optional: Log successful save (can be removed in production if too verbose)
-        // console.log(`Successfully saved chat ${sanitizedId} with ${messages.length} messages`);
+        // Verify chat exists and belongs to user (if userId provided)
+        if (userId) {
+            const chat = await prisma.chat.findUnique({
+                where: { id: chatId },
+                select: { userId: true },
+            });
+
+            if (!chat) {
+                throw new Error(`Chat ${chatId} not found`);
+            }
+
+            if (chat.userId !== userId) {
+                throw new Error("Unauthorized: Chat does not belong to user");
+            }
+        }
+
+        // Use a transaction to ensure atomicity
+        // This ensures all operations succeed or fail together
+        await prisma.$transaction(async (tx) => {
+            // Get existing message IDs for this chat to determine what needs to be updated vs created
+            const existingMessages = await tx.message.findMany({
+                where: { chatId },
+                select: { id: true },
+            });
+            const existingMessageIds = new Set(existingMessages.map((m) => m.id));
+            const currentMessageIds = new Set(messages.map((m) => m.id));
+
+            // Separate messages into new and existing for batch operations
+            const messagesToCreate: Array<{
+                id: string;
+                chatId: string;
+                role: string;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                content: any;
+            }> = [];
+            const messagesToUpdate: Array<{
+                id: string;
+                role: string;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                content: any;
+            }> = [];
+
+            for (const msg of messages) {
+                const messageContent = messageToPrismaJson(msg);
+                if (existingMessageIds.has(msg.id)) {
+                    // Message exists, prepare for update
+                    messagesToUpdate.push({
+                        id: msg.id,
+                        role: msg.role,
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        content: messageContent as any,
+                    });
+                } else {
+                    // New message, prepare for create
+                    messagesToCreate.push({
+                        id: msg.id,
+                        chatId,
+                        role: msg.role,
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        content: messageContent as any,
+                    });
+                }
+            }
+
+            // Batch create new messages (more efficient than individual creates)
+            if (messagesToCreate.length > 0) {
+                await tx.message.createMany({
+                    data: messagesToCreate as never,
+                    skipDuplicates: true, // Safety net in case of race conditions
+                });
+            }
+
+            // Batch update existing messages
+            // Note: Prisma doesn't support batch update with different data per row,
+            // so we update individually, but this is still better than delete+recreate
+            for (const msgUpdate of messagesToUpdate) {
+                await tx.message.update({
+                    where: { id: msgUpdate.id },
+                    data: {
+                        role: msgUpdate.role,
+                        content: msgUpdate.content,
+                    },
+                });
+            }
+
+            // Remove messages that are no longer in the array (shouldn't happen in normal flow,
+            // but handles edge cases like message deletion or reordering)
+            const messagesToDelete = Array.from(existingMessageIds).filter(
+                (id) => !currentMessageIds.has(id)
+            );
+            if (messagesToDelete.length > 0) {
+                await tx.message.deleteMany({
+                    where: {
+                        chatId,
+                        id: { in: messagesToDelete },
+                    },
+                });
+            }
+
+            // Update chat title and updatedAt timestamp
+            const title = generateChatTitle(messages);
+            await tx.chat.update({
+                where: { id: chatId },
+                data: {
+                    title,
+                    updatedAt: new Date(),
+                },
+            });
+        });
     } catch (error) {
-        // Log error and rethrow - caller should handle this
-        console.error(`Failed to save chat ${sanitizedId}:`, error);
+        console.error(`Failed to save chat ${chatId}:`, error);
         throw new Error(`Failed to save chat: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
-}
-
-function getChatFile(id: string): string {
-    const chatDir = path.join(process.cwd(), ".chats");
-    
-    // Ensure directory exists
-    if (!existsSync(chatDir)) {
-        mkdirSync(chatDir, { recursive: true });
-    }
-    
-    // Path.join automatically handles path separators and prevents traversal
-    // But we've already validated the ID above, so this is safe
-    return path.join(chatDir, `${id}.json`);
-}
-
-function getChatDir(): string {
-    const chatDir = path.join(process.cwd(), ".chats");
-    if (!existsSync(chatDir)) {
-        mkdirSync(chatDir, { recursive: true });
-    }
-    return chatDir;
 }
 
 // Extract text from message parts for title/preview
@@ -198,71 +279,69 @@ export interface ChatMetadata {
     messageCount: number;
 }
 
-export async function listChats(): Promise<ChatMetadata[]> {
-    const chatDir = getChatDir();
-    
+
+export async function listChats(userId: string): Promise<ChatMetadata[]> {
+    if (!userId) {
+        throw new Error("User ID is required to list chats");
+    }
+
     try {
-        const files = readdirSync(chatDir);
-        const chats: ChatMetadata[] = [];
-        
-        for (const file of files) {
-            // Only process .json files, skip .tmp files
-            if (!file.endsWith(".json")) {
-                continue;
-            }
-            
-            const chatId = file.replace(".json", "");
-            
-            // Validate chat ID from filename
-            if (!validateChatId(chatId)) {
-                continue;
-            }
-            
-            try {
-                const messages = await loadChat(chatId);
-                
-                // Skip empty chats
-                if (messages.length === 0) {
-                    continue;
-                }
-                
-                // Get file stats for timestamp
-                const filePath = path.join(chatDir, file);
-                const stats = statSync(filePath);
-                
-                // Get last message timestamp from messages if available
-                const lastMessage = messages[messages.length - 1];
-                // UIMessage may have createdAt field, but use file mtime as fallback
-                const messageTimestamp = (lastMessage as any).createdAt 
-                    ? new Date((lastMessage as any).createdAt).getTime()
-                    : stats.mtimeMs;
-                
-                chats.push({
-                    id: chatId,
-                    title: generateChatTitle(messages),
-                    lastMessage: getLastMessagePreview(messages),
-                    timestamp: messageTimestamp,
-                    messageCount: messages.length,
-                });
-            } catch (error) {
-                // Skip corrupted files
-                console.error(`Failed to load chat ${chatId}:`, error);
-                continue;
-            }
-        }
-        
-        // Sort by timestamp (newest first)
-        return chats.sort((a, b) => b.timestamp - a.timestamp);
+        // Get all chats for the user with their message counts
+        const chats = await prisma.chat.findMany({
+            where: { userId },
+            include: {
+                messages: {
+                    orderBy: { createdAt: "desc" },
+                    take: 1, // Only need the last message for preview
+                },
+                _count: {
+                    select: { messages: true },
+                },
+            },
+            orderBy: { updatedAt: "desc" },
+        });
+
+        return chats
+            .filter((chat) => chat._count.messages > 0) // Only return chats with messages
+            .map((chat) => {
+                const lastMessage = chat.messages[0];
+                const lastMessageContent = lastMessage
+                    ? (lastMessage.content as unknown as UIMessage)
+                    : null;
+
+                return {
+                    id: chat.id,
+                    title: chat.title || "New Chat",
+                    lastMessage: lastMessageContent
+                        ? getLastMessagePreview([lastMessageContent])
+                        : "No messages yet",
+                    timestamp: chat.updatedAt.getTime(),
+                    messageCount: chat._count.messages,
+                };
+            });
     } catch (error) {
-        console.error("Failed to list chats:", error);
+        console.error(`Failed to list chats for user ${userId}:`, error);
         return [];
     }
 }
 
-export async function getChatTitle(id: string): Promise<string> {
+export async function getChatTitle(id: string, userId?: string): Promise<string> {
     try {
-        const messages = await loadChat(id);
-        return generateChatTitle(messages);
+        const chat = await prisma.chat.findUnique({
+            where: { id },
+            select: { title: true, userId: true },
+        });
+
+        if (!chat) {
+            return "Chat";
+        }
+
+        // If userId is provided, verify ownership
+        if (userId && chat.userId !== userId) {
+            throw new Error("Unauthorized: Chat does not belong to user");
+        }
+
+        return chat.title || "New Chat";
     } catch (error) {
         console.error(`Failed to get chat title for ${id}:`, error);
         return "Chat";
