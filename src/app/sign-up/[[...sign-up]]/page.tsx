@@ -1,5 +1,10 @@
-import { SignUp } from '@clerk/nextjs'
+import { AuthLayout } from '@/components/auth-layout'
+import { CustomSignUp } from '@/components/custom-sign-up'
 
 export default function Page() {
-  return <SignUp />
+  return (
+    <AuthLayout>
+      <CustomSignUp />
+    </AuthLayout>
+  )
 }
