@@ -170,7 +170,7 @@ export function Navbar() {
                   <Link href="/" className="flex items-center gap-3">
                     <Icons.logo className="size-7 md:size-10" />
                     <p className="text-lg font-semibold text-primary">
-                    AgentKit
+                      AgentKit
                     </p>
                   </Link>
                   <button
@@ -202,11 +202,10 @@ export function Navbar() {
                             element?.scrollIntoView({ behavior: "smooth" });
                             setIsDrawerOpen(false);
                           }}
-                          className={`underline-offset-4 hover:text-primary/80 transition-colors ${
-                            activeSection === item.href.substring(1)
+                          className={`underline-offset-4 hover:text-primary/80 transition-colors ${activeSection === item.href.substring(1)
                               ? "text-primary font-medium"
                               : "text-primary/60"
-                          }`}
+                            }`}
                         >
                           {item.name}
                         </a>

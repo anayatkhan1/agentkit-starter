@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "../theme-toggle"
+import { NavUser } from "./nav-user"
 import Link from "next/link"
 import { Icons } from "../icons"
 import { useRouter } from "next/navigation"
@@ -33,16 +34,16 @@ function groupChatsByPeriod(chats: ChatMetadata[]) {
         period: string;
         chats: ChatMetadata[];
     }[] = [
-        { period: "Today", chats: [] },
-        { period: "Yesterday", chats: [] },
-        { period: "Last 7 days", chats: [] },
-        { period: "Last month", chats: [] },
-        { period: "Older", chats: [] },
-    ];
+            { period: "Today", chats: [] },
+            { period: "Yesterday", chats: [] },
+            { period: "Last 7 days", chats: [] },
+            { period: "Last month", chats: [] },
+            { period: "Older", chats: [] },
+        ];
 
     chats.forEach((chat) => {
         const diff = now - chat.timestamp;
-        
+
         if (diff < oneDay) {
             groups[0].chats.push(chat);
         } else if (diff < 2 * oneDay) {
@@ -82,7 +83,7 @@ export function ChatSidebar({ currentChatId }: { currentChatId?: string }) {
         }
 
         fetchChats();
-        
+
         // Refresh chats periodically (every 30 seconds)
         const interval = setInterval(fetchChats, 30000);
         return () => clearInterval(interval);
@@ -160,8 +161,13 @@ export function ChatSidebar({ currentChatId }: { currentChatId?: string }) {
                     ))
                 )}
             </SidebarContent>
-            <SidebarFooter className="px-4 py-3 border-t">
+            <div className="px-4 py-3">
                 <ThemeToggle />
+            </div>
+
+            <SidebarFooter className="px-4 py-3 border-t flex flex-col gap-2">
+                <NavUser />
+
             </SidebarFooter>
         </Sidebar>
     )

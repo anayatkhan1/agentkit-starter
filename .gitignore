@@ -42,3 +42,5 @@ next-env.d.ts
 
 # chat persistence
 .chats/
+
+/src/generated/prisma
