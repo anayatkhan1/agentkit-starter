@@ -1,7 +1,14 @@
-import { FullChatApp } from "@/components/chat-ui/chat-ui"
+import { createChat } from "@/lib/chat-store";
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 
-export default function ChatPage() {
-  return <FullChatApp />
+export default async function ChatPage() {
+	const { userId } = await auth();
+
+	if (!userId) {
+		redirect("/sign-in");
+	}
+
+	const id = await createChat(userId);
+	redirect(`/chat/${id}`);
 }
-
-

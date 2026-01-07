@@ -18,6 +18,7 @@ import {
     ThumbsDown,
     ThumbsUp,
     Trash,
+    Paperclip,
 } from "lucide-react";
 import { UIMessage } from "ai";
 
@@ -63,14 +64,21 @@ export function ChatStream({ messages }: ChatStreamProps) {
                     const isAssistant = message.role === "assistant"
                     const isLastMessage = index === messages.length - 1
                     
-                    const messageContent = message.parts
-                        .filter((part) => part.type === "text")
+                    const textParts = message.parts
+                        ?.filter((part) => part.type === "text") || [];
+                    const fileParts = message.parts
+                        ?.filter((part) => part.type === "file") || [];
+                    
+                    const messageContent = textParts
                         .map((part) => part.text)
-                        .join("");
+                        .join("") || "";
+
+                    // Ensure unique key - use id if available, otherwise fallback to index
+                    const messageKey = message.id || `message-${index}-${message.role}`;
 
                     return (
                         <Message
-                            key={message.id}
+                            key={messageKey}
                             className={cn(
                                 "mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
                                 isAssistant ? "items-start" : "items-end"
@@ -112,10 +120,29 @@ export function ChatStream({ messages }: ChatStreamProps) {
                                     </MessageActions>
                                 </div>
                             ) : (
-                                <div className="group flex flex-col items-end gap-1">
-                                    <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
-                                        {messageContent}
-                                    </MessageContent>
+                                <div className="group flex flex-col items-end gap-2">
+                                    {/* File attachments */}
+                                    {fileParts.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 max-w-[85%] sm:max-w-[75%]">
+                                            {fileParts.map((filePart, fileIndex) => (
+                                                <div
+                                                    key={fileIndex}
+                                                    className="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-700 text-sm"
+                                                >
+                                                    <Paperclip className="h-4 w-4 text-slate-500" />
+                                                    <span className="max-w-[160px] truncate">
+                                                        {filePart.filename || "File"}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {/* Text content */}
+                                    {messageContent && (
+                                        <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
+                                            {messageContent}
+                                        </MessageContent>
+                                    )}
                                     <MessageActions
                                         className={cn(
                                             "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"

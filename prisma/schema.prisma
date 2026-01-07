@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Chat model - represents a conversation/conversation thread
+model Chat {
+  id        String    @id @default(cuid())
+  userId    String    // Clerk user ID (not a foreign key since Clerk manages users externally)
+  title     String?   // Optional title, can be auto-generated from first message
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  messages  Message[]
+
+  // Indexes for performance
+  @@index([userId])
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("chats")
+}
+
+// Message model - represents individual messages in a chat
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String   // "user", "assistant", "system", etc.
+  content   Json     // Stores the full UIMessage structure including parts array
+  createdAt DateTime @default(now())
+
+  // Relations
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  // Indexes for performance
+  @@index([chatId])
+  @@index([chatId, createdAt(sort: Asc)])
+  @@map("messages")
+}
+
+
