@@ -30,12 +30,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           loop
           muted
           playsInline
-          className="absolute inset-0 h-full w-full object-cover  grayscale-[0.3] dark:opacity-35 dark:grayscale-0 dark:lg:opacity-75"
-          src="https://ik.imagekit.io/lrigu76hy/tailark/dna-video.mp4?updatedAt=1745736251477"
+          preload="auto"
+          className="absolute inset-0 h-full w-full object-cover grayscale-[0.3] dark:opacity-35 dark:grayscale-0 dark:lg:opacity-75"
+          src="/video/dna-clip.mp4"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-background/40 via-transparent to-background/20 dark:from-background/10 dark:via-transparent dark:to-background/5" />
       </div>
     </div>
   )
 }
-
