@@ -27,6 +27,7 @@ interface ChatInputProps {
 export function ChatInput({ isLoading, stop, onSubmit, className }: ChatInputProps) {
     const [input, setInput] = useState("");
     const [files, setFiles] = useState<File[]>([]);
+    const [searchMode, setSearchMode] = useState(false);
     const uploadInputRef = useRef<HTMLInputElement>(null);
 
     const fileToDataURL = (file: File) =>
@@ -65,7 +66,12 @@ export function ChatInput({ isLoading, stop, onSubmit, className }: ChatInputPro
                 });
             }
 
-            onSubmit({ parts });
+            // Pass searchMode as metadata in the message
+            onSubmit({
+                parts,
+                // Add searchMode as a custom property that will be passed through
+                searchMode
+            } as { parts: Array<UIMessagePart<UIDataTypes, UITools>>; searchMode: boolean });
         } catch (err) {
             console.error("Failed to process message:", err);
             // Restore input if error occurs (optional, but good UX)
@@ -150,8 +156,13 @@ export function ChatInput({ isLoading, stop, onSubmit, className }: ChatInputPro
                                     aria-label="File upload"
                                 />
 
-                                <PromptInputAction tooltip="Search">
-                                    <Button variant="outline" className="rounded-full">
+                                <PromptInputAction tooltip={searchMode ? "Disable web search" : "Enable web search"}>
+                                    <Button
+                                        variant={searchMode ? "default" : "outline"}
+                                        className="rounded-full"
+                                        onClick={() => setSearchMode(!searchMode)}
+                                        type="button"
+                                    >
                                         <Globe size={18} />
                                         Search
                                     </Button>

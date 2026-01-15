@@ -60,10 +60,14 @@ export function ChatContent({
         transport: new DefaultChatTransport({
             api: "/api/chat",
             prepareSendMessagesRequest({ messages, id }) {
+                const lastMessage = messages[messages.length - 1];
+                // Extract searchMode from message metadata if present
+                const searchMode = (lastMessage as any).searchMode ?? false;
                 return {
                     body: {
-                        message: messages[messages.length - 1], // Only send last message
+                        message: lastMessage, // Only send last message
                         id,
+                        searchMode, // Pass searchMode to API
                     },
                 };
             },
