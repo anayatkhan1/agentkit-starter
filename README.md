@@ -2,7 +2,8 @@
 
 AgentKit is a production-ready starter template for building AI agents with web search capabilities. It's designed to help developers quickly build AI chat applications with authentication, database persistence, and a beautiful UI—everything you need to launch fast.
 
-![AgentKit](https://github.com/user-attachments/assets/agentkit-thumbnail)
+<img width="980" height="500" alt="aaaagent" src="https://github.com/user-attachments/assets/54da3860-48af-4754-9490-62660dd918c9" />
+
 
 ## Features
 
