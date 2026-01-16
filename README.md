@@ -94,7 +94,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 To run the project locally, you need to set up the following environment variables. Create a `.env.local` or `.env` file in the root directory of the project:
 
-```bash
+```env
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 CLERK_SECRET_KEY=your_clerk_secret_key
@@ -143,7 +143,7 @@ pnpm prisma studio
 
 ## Project Structure
 
-```
+```env
 agentkit-starter/
 ├── src/
 │   ├── agents/              # AI agent implementations
