@@ -1,6 +1,6 @@
-import { webSearchToolset } from "@/tools/web-search";
 import { anthropic } from "@ai-sdk/anthropic";
 import { type ModelMessage, stepCountIs, streamText } from "ai";
+import { webSearchToolset } from "@/tools/web-search";
 import { WEB_SEARCH_AGENT_PROMPT } from "./prompt";
 
 export function webSearchAgent(messages: ModelMessage[]) {

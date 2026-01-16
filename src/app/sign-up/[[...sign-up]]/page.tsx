@@ -1,10 +1,10 @@
-import { AuthLayout } from '@/components/auth-layout'
-import { CustomSignUp } from '@/components/custom-sign-up'
+import { AuthLayout } from "@/components/auth-layout";
+import { CustomSignUp } from "@/components/custom-sign-up";
 
 export default function Page() {
-  return (
-    <AuthLayout>
-      <CustomSignUp />
-    </AuthLayout>
-  )
+	return (
+		<AuthLayout>
+			<CustomSignUp />
+		</AuthLayout>
+	);
 }
