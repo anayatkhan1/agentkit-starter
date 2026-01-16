@@ -43,10 +43,10 @@ export const siteConfig = {
 		"AI chat template",
 	],
 	links: {
-		email: "support@agentkit.dev",
+		email: "anayat0khan@gmail.com",
 		twitter: "https://x.com/anayatkhan09",
-		discord: "https://discord.gg/agentkit",
-		github: "https://github.com/anayatkhan1",
+		discord: "https://discord.com/users/784060394964647936",
+		github: "https://github.com/anayatkhan1/agentkit-starter",
 		instagram: "",
 	},
 	nav: {
@@ -79,7 +79,7 @@ export const siteConfig = {
 		cta: {
 			primary: {
 				text: "View on GitHub",
-				href: "https://github.com/anayatkhan1",
+				href: "https://github.com/anayatkhan1/agentkit-starter",
 			},
 			secondary: {
 				text: "Try Demo",
@@ -1005,7 +1005,7 @@ export const siteConfig = {
 		backgroundImage: "/agent-cta-background.png",
 		button: {
 			text: "View on GitHub",
-			href: "https://github.com/anayatkhan1",
+			href: "https://github.com/anayatkhan1/agentkit-starter",
 		},
 		subtext: "Open source • MIT License • Free forever",
 	},
@@ -1024,7 +1024,11 @@ export const siteConfig = {
 			links: [
 				{ id: 5, title: "Documentation", url: "#" },
 				{ id: 6, title: "Examples", url: "#" },
-				{ id: 7, title: "GitHub", url: "https://github.com/anayatkhan1" },
+				{
+					id: 7,
+					title: "GitHub",
+					url: "https://github.com/anayatkhan1/agentkit-starter",
+				},
 				{ id: 8, title: "Demo", url: "/chat" },
 			],
 		},
