@@ -3,20 +3,15 @@ import { GeistMono } from "geist/font/mono";
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { siteConfig } from "@/lib/site";
-
+import { metadata as siteMetadata } from "./metadata";
 import "./globals.css";
 
 export const viewport: Viewport = {
 	themeColor: "black",
 };
 
-export const metadata: Metadata = {
-	metadataBase: new URL(siteConfig.url),
-	title: {
-		default: siteConfig.name,
-		template: `%s - ${siteConfig.name}`,
-	},
-	description: siteConfig.description,
+export const metadata = {
+	...siteMetadata,
 };
 
 export default function RootLayout({
