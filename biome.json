@@ -1,0 +1,44 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+	"vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
+	"files": { "ignoreUnknown": false },
+	"formatter": { "enabled": true, "indentStyle": "tab" },
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": false,
+			"a11y": {
+				"noAriaUnsupportedElements": "warn",
+				"useAltText": "warn",
+				"useAriaPropsForRole": "warn",
+				"useValidAriaProps": "warn",
+				"useValidAriaValues": "warn"
+			},
+			"correctness": {
+				"noChildrenProp": "error",
+				"useExhaustiveDependencies": "off",
+				"useHookAtTopLevel": "error",
+				"useJsxKeyInIterable": "error",
+				"noUnusedImports": "warn"
+			},
+			"security": {
+				"noDangerouslySetInnerHtmlWithChildren": "error",
+				"noBlankTarget": "off"
+			},
+			"suspicious": {
+				"noCommentText": "error",
+				"noDuplicateJsxProps": "error"
+			},
+			"nursery": {
+				"useSortedClasses": {
+					"level": "warn",
+					"fix": "safe"
+				}
+			}
+		}
+	},
+	"javascript": { "formatter": { "quoteStyle": "double" } },
+	"css": { "parser": { "cssModules": false, "tailwindDirectives": true } },
+	"overrides": [{ "includes": [] }]
+}
