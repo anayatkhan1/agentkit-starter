@@ -29,6 +29,7 @@ export function CustomSignUp({
 	const [verificationCode, setVerificationCode] = useState("");
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
+	const [isOAuthLoading, setIsOAuthLoading] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -70,7 +71,10 @@ export function CustomSignUp({
 	};
 
 	const handleOAuthSignUp = async (strategy: "oauth_google") => {
-		if (!isLoaded) return;
+		if (!isLoaded || isOAuthLoading) return;
+
+		setIsOAuthLoading(true);
+		setError("");
 
 		try {
 			await signUp.authenticateWithRedirect({
@@ -78,8 +82,14 @@ export function CustomSignUp({
 				redirectUrl: "/chat",
 				redirectUrlComplete: "/chat",
 			});
+			// Note: The redirect will happen, so the code below won't execute
+			// but we keep the loading state for better UX during the redirect
 		} catch (err: any) {
-			setError(err.errors?.[0]?.message || "Failed to sign up with Google.");
+			setIsOAuthLoading(false);
+			setError(
+				err.errors?.[0]?.message ||
+					"Failed to sign up with Google. Please try again.",
+			);
 		}
 	};
 
@@ -111,7 +121,7 @@ export function CustomSignUp({
 						variant="outline"
 						className="h-11 w-full justify-start gap-3"
 						onClick={() => handleOAuthSignUp("oauth_google")}
-						disabled={isLoading}
+						disabled={isLoading || isOAuthLoading}
 					>
 						<svg className="size-5" viewBox="0 0 24 24">
 							<path

@@ -27,6 +27,7 @@ export function CustomSignIn({
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
+	const [isOAuthLoading, setIsOAuthLoading] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -59,7 +60,10 @@ export function CustomSignIn({
 	};
 
 	const handleOAuthSignIn = async (strategy: "oauth_google") => {
-		if (!isLoaded) return;
+		if (!isLoaded || isOAuthLoading) return;
+
+		setIsOAuthLoading(true);
+		setError("");
 
 		try {
 			await signIn.authenticateWithRedirect({
@@ -67,8 +71,14 @@ export function CustomSignIn({
 				redirectUrl: "/chat",
 				redirectUrlComplete: "/chat",
 			});
+			// Note: The redirect will happen, so the code below won't execute
+			// but we keep the loading state for better UX during the redirect
 		} catch (err: any) {
-			setError(err.errors?.[0]?.message || "Failed to sign in with Google.");
+			setIsOAuthLoading(false);
+			setError(
+				err.errors?.[0]?.message ||
+					"Failed to sign in with Google. Please try again.",
+			);
 		}
 	};
 
@@ -97,7 +107,7 @@ export function CustomSignIn({
 						variant="outline"
 						className="h-11 w-full cursor-pointer justify-start gap-3"
 						onClick={() => handleOAuthSignIn("oauth_google")}
-						disabled={isLoading}
+						disabled={isLoading || isOAuthLoading}
 					>
 						<svg className="size-5" viewBox="0 0 24 24">
 							<path
@@ -118,9 +128,6 @@ export function CustomSignIn({
 							/>
 						</svg>
 						Continue with Google
-						<span className="ml-auto rounded bg-muted px-2 py-0.5 text-muted-foreground text-xs">
-							Last used
-						</span>
 					</Button>
 				</Field>
 
