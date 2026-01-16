@@ -4,12 +4,11 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev --turbopack",
-		"build": "next build",
+		"build": "prisma generate && next build",
 		"start": "next start",
-		"lint": "biome check src",
-		"format": "biome check --write src",
-		"clean": "rm -rf .next .turbo .vercel node_modules",
-		"prepare": "husky"
+		"lint": "eslint .",
+		"clean": "rm -rf node_modules .next",
+		"postinstall": "prisma generate"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.2",
