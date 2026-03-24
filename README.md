@@ -112,6 +112,9 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 
 # Optional: Production URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Optional: Tavily Search (when set, switches web-search agent from @exalabs/ai-sdk to Tavily)
+TAVILY_API_KEY=your_tavily_api_key
 ```
 
 ### Getting API Keys
@@ -119,6 +122,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - **Clerk**: Sign up at [clerk.com](https://clerk.com/) and create a new application. Copy your publishable key and secret key from the dashboard.
 - **Anthropic**: Get your API key from [console.anthropic.com](https://console.anthropic.com/).
 - **PostgreSQL**: Use a local PostgreSQL instance or a cloud provider like [Neon](https://neon.tech/), [Supabase](https://supabase.com/), or [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres).
+- **Tavily** (optional): Get your API key from [app.tavily.com](https://app.tavily.com). When set, the web-search agent uses Tavily instead of @exalabs/ai-sdk.
 
 ## Database Setup
 
