@@ -29,7 +29,8 @@ AgentKit is a production-ready starter template for building AI agents with web 
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Magic UI](https://magicui.design) (Landing page components)
-- [ExaLabs AI SDK](https://www.exalabs.com/) (Web search tool)
+- [ExaLabs AI SDK](https://www.exalabs.com/) (default web search provider)
+- [You.com Search API](https://docs.you.com/api-reference/search/v1-search) (optional web search provider)
 
 ### Tools
 
@@ -110,6 +111,17 @@ DATABASE_URL=postgresql://user:password@localhost:5432/agentkit
 # Anthropic AI
 ANTHROPIC_API_KEY=your_anthropic_api_key
 
+# Web Search Provider (optional)
+# exa (default) or you
+WEB_SEARCH_PROVIDER=exa
+
+# Exa provider key (required when WEB_SEARCH_PROVIDER=exa)
+EXA_API_KEY=your_exa_api_key
+
+# You.com provider key (optional for first 100 searches/day, recommended for production)
+YDC_API_KEY=your_youcom_api_key
+# YOU_API_KEY is also supported as an alias
+
 # Optional: Production URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
@@ -119,6 +131,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - **Clerk**: Sign up at [clerk.com](https://clerk.com/) and create a new application. Copy your publishable key and secret key from the dashboard.
 - **Anthropic**: Get your API key from [console.anthropic.com](https://console.anthropic.com/).
 - **PostgreSQL**: Use a local PostgreSQL instance or a cloud provider like [Neon](https://neon.tech/), [Supabase](https://supabase.com/), or [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres).
+- **Exa (optional)**: Create an API key in your Exa dashboard if you want to use the default Exa provider.
+- **You.com (optional)**: Create an API key at [you.com/platform](https://you.com/platform) to raise limits and run authenticated search.
 
 ## Database Setup
 
@@ -174,6 +188,22 @@ agentkit-starter/
 ### Web Search Toggle
 
 The chat interface includes a search toggle button. When enabled, the AI agent will use web search to find current information. When disabled, the agent responds using its training knowledge only.
+
+### Web Search Provider Selection
+
+Set `WEB_SEARCH_PROVIDER` to select the backend:
+
+- `exa` (default): uses Exa via `@exalabs/ai-sdk`
+- `you`: uses You.com Search API (`GET https://api.you.com/v1/agents/search`)
+
+Example:
+
+```bash
+WEB_SEARCH_PROVIDER=you
+YDC_API_KEY=your_key_here
+```
+
+If You.com search fails, the tool automatically falls back to Exa when `EXA_API_KEY` is configured. If no fallback is configured, the tool returns a clear error message so the agent can recover gracefully.
 
 ### Chat Persistence
 
