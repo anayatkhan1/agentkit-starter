@@ -1,16 +1,31 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { type ModelMessage, stepCountIs, streamText } from "ai";
-import { webSearchToolset } from "@/tools/web-search";
+import {
+	type LanguageModel,
+	type ModelMessage,
+	stepCountIs,
+	streamText,
+} from "ai";
+import { createWebSearchToolset } from "@/tools/web-search";
 import { WEB_SEARCH_AGENT_PROMPT } from "./prompt";
 
-export function webSearchAgent(messages: ModelMessage[]) {
+export function webSearchAgent(
+	messages: ModelMessage[],
+	options: {
+		conversationId?: string;
+		abortSignal?: AbortSignal;
+		model?: LanguageModel;
+	} = {},
+) {
+	const model = options.model ?? anthropic("claude-sonnet-4-5-20250929");
 	return streamText({
-		model: anthropic("claude-sonnet-4-5-20250929"),
+		model,
 		system: WEB_SEARCH_AGENT_PROMPT,
 		messages,
-		tools: {
-			...webSearchToolset,
-		},
+		tools: createWebSearchToolset({
+			conversationId: options.conversationId,
+			modelName: typeof model === "string" ? model : model.modelId,
+		}),
+		abortSignal: options.abortSignal,
 		stopWhen: [stepCountIs(10)],
 	});
 }

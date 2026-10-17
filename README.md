@@ -29,7 +29,8 @@ AgentKit is a production-ready starter template for building AI agents with web 
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Magic UI](https://magicui.design) (Landing page components)
-- [ExaLabs AI SDK](https://www.exalabs.com/) (Web search tool)
+- [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) (Web search without a search API key)
+- [ExaLabs AI SDK](https://www.exalabs.com/) (Web search for configured Exa installations)
 
 ### Tools
 
@@ -110,6 +111,11 @@ DATABASE_URL=postgresql://user:password@localhost:5432/agentkit
 # Anthropic AI
 ANTHROPIC_API_KEY=your_anthropic_api_key
 
+# Optional: choose a search provider (parallel or exa)
+# Without this setting, an existing EXA_API_KEY selects Exa; otherwise Parallel is used.
+# WEB_SEARCH_PROVIDER=parallel
+# EXA_API_KEY=your_exa_api_key
+
 # Optional: Production URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
@@ -174,6 +180,12 @@ agentkit-starter/
 ### Web Search Toggle
 
 The chat interface includes a search toggle button. When enabled, the AI agent will use web search to find current information. When disabled, the agent responds using its training knowledge only.
+
+Search uses [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) when no search provider or Exa key is configured. It connects to `https://search.parallel.ai/mcp` over Streamable HTTP and returns source URLs and excerpts to the agent and chat source cards. Anonymous search uses Fast mode and needs no Parallel account or API key. The free endpoint has usage limits and is intended for exploration and light use.
+
+Existing installations with `EXA_API_KEY` continue to use Exa. Set `WEB_SEARCH_PROVIDER=parallel` to select Parallel explicitly, or `WEB_SEARCH_PROVIDER=exa` with `EXA_API_KEY` to select Exa. Provider errors are reported to the agent without switching providers. Parallel calls have a 30-second timeout and are cancelled when the chat request is aborted. Authentication and the search toggle still control access to search.
+
+Run `pnpm test:web-search` (or `npm run test:web-search`) for deterministic provider and agent-loop tests. They use a scripted model and MCP responses without API keys or a database.
 
 ### Chat Persistence
 

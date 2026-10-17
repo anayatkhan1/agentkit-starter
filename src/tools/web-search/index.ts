@@ -1,2 +1,2 @@
-export { webSearchToolset } from "./toolset";
+export { createWebSearchToolset } from "./toolset";
 export type { WebSearchUIMessage } from "./types";

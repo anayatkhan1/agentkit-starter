@@ -63,7 +63,10 @@ export async function POST(request: NextRequest) {
 
 	// Simple logic: use webSearchAgent if searchMode is enabled, otherwise just streamText without tools
 	const streamTextResult = searchMode
-		? webSearchAgent(modelMessages)
+		? webSearchAgent(modelMessages, {
+				conversationId: id,
+				abortSignal: request.signal,
+			})
 		: streamText({
 				model: anthropic("claude-sonnet-4-5-20250929"),
 				system:
