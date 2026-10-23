@@ -7,6 +7,7 @@
 		"build": "prisma generate && next build",
 		"start": "next start",
 		"lint": "eslint .",
+		"test:web-search": "tsx --test tests/web-search.test.ts",
 		"clean": "rm -rf node_modules .next",
 		"postinstall": "prisma generate"
 	},
@@ -15,6 +16,7 @@
 		"@ai-sdk/react": "^3.0.6",
 		"@clerk/nextjs": "^6.36.5",
 		"@exalabs/ai-sdk": "^1.0.5",
+		"@modelcontextprotocol/sdk": "^1.32.1",
 		"@number-flow/react": "^0.5.7",
 		"@prisma/adapter-pg": "^7.2.0",
 		"@prisma/client": "^7.2.0",

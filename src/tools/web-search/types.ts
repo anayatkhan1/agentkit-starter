@@ -1,6 +1,6 @@
-import { InferUITools, UIMessage } from "ai";
-import { webSearchToolset } from "./toolset";
+import type { InferUITools, UIMessage } from "ai";
+import type { createWebSearchToolset } from "./toolset";
 
-type WebSearchTools = InferUITools<typeof webSearchToolset>;
+type WebSearchTools = InferUITools<ReturnType<typeof createWebSearchToolset>>;
 
 export type WebSearchUIMessage = UIMessage<never, never, WebSearchTools>;
